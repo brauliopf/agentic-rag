@@ -7,3 +7,4 @@ beautifulsoup4
 playwright
 langchain_text_splitters
 tiktoken
+pydantic
