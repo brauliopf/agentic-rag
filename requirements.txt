@@ -1,0 +1,9 @@
+langgraph
+langchain_openai
+langchain_groq
+langchain-community
+langchain-text-splitters
+beautifulsoup4
+playwright
+langchain_text_splitters
+tiktoken
