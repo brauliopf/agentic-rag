@@ -308,16 +308,15 @@ async def query_sources(query_request: QueryRequest):
         ]
     }
     
-    print(query_request.query)
-    # Stream the response
-    final_state = None
-    for state in app_state.graph.stream(initial_state):
-        # Keep track of the final state
-        final_state = state
+    # Run the query
+    final_state = app_state.graph.invoke(initial_state)
     
     # Extract the answer from the final state
-    if final_state:
+    if final_state and "messages" in final_state:
+        # The last message in the messages array contains our answer
         last_message = final_state["messages"][-1]
+        
+        # Extract content from the message
         answer = last_message.content if hasattr(last_message, "content") else str(last_message)
         
         # Extract sources (this is simplified - in practice, you would track which documents were used)
