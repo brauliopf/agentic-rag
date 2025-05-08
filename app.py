@@ -1,109 +1,27 @@
 import uuid
-from contextlib import asynccontextmanager
 from typing import List
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Path
 from fastapi.responses import JSONResponse
-from langchain.tools.retriever import create_retriever_tool
-from langchain_community.document_loaders import WebBaseLoader
-from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from core.state import app_state
+from core.lifespan import lifespan
 from models.schemas import (QueryRequest, QueryResponse, SourceCreate,
                             SourceState)
-from rag.graph import create_rag_graph
 from services.query import execute_query
-from services.sources import process_source
+from services.sources import process_source#, process_source_play
 
 load_dotenv()
-
-# Use utility decorator to manage app resources before and after startup
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # context management 'YIELD': runs on startup
-    # Initialize in-memory vector store
-    app_state.vectorstore = InMemoryVectorStore.from_documents(
-        documents=[], embedding=app_state.embeddings
-    )
-    app_state.retriever = app_state.vectorstore.as_retriever()
-    app_state.retriever_tool = create_retriever_tool(
-        app_state.retriever,
-        "retrieve_sources",
-        "Search and return information from the loaded sources.",
-    )
-    
-    # Setup the RAG graph
-    app_state.graph = create_rag_graph(app_state.llm, app_state.retriever_tool)
-    
-    # Initialize with default sources
-    try:
-        # Add default sources
-        default_sources = [
-            ("https://lilianweng.github.io/posts/2024-11-28-reward-hacking/", "page 1"),
-            ("https://lilianweng.github.io/posts/2024-07-07-hallucination/", "page 2"),
-            ("https://lilianweng.github.io/posts/2024-04-12-diffusion-video/", "page 3")
-        ]
-        
-        for url, description in default_sources:
-            process_source(url, description)
-            
-        print('Added default sources')
-    except Exception as e:
-        print(f"Error adding default sources: {e}")
-    
-    yield
-    # context management 'YIELD': here, runs below runs on teardown (empty fo now)
-
 
 app = FastAPI(lifespan=lifespan)
 
 
-# Create a utility function for source addition
-def process_source(url, description=None):
-    """Process a source URL and add it to the vector store"""
-    source_id = str(uuid.uuid4())
-    
-    # Create source entry
-    source_response = SourceState(
-        id=source_id,
-        url=str(url),
-        description=description,
-        status="pending"
-    )
-    app_state.sources[source_id] = source_response
-    
-    try:
-        # Load docs from the URL
-        docs = WebBaseLoader(str(url)).load()
-        
-        # Split docs into chunks
-        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-            chunk_size=100, chunk_overlap=50
-        )
-        doc_splits = text_splitter.split_documents(docs)
-        
-        # Add to vectorstore
-        app_state.vectorstore.add_documents(doc_splits)
-        
-        # Update source status
-        app_state.sources[source_id].status = "processed"
-        
-        return source_response
-    except Exception as e:
-        app_state.sources[source_id].status = "failed"
-        return SourceState(
-            id=source_id,
-            url=str(url),
-            status="failed"
-        )
-
-
 # API Endpoints
 @app.post("/sources", response_model=SourceState)
-async def add_source(source: SourceCreate):
+def add_source(source: SourceCreate):
     """Add a new URL to the vector store"""
+    # result = process_source(source.url, source.description)
     result = process_source(source.url, source.description)
     
     if result.status == "failed":

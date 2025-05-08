@@ -10,8 +10,9 @@ class SourceCreate(BaseModel):
 class SourceState(BaseModel):
     id: str
     url: str
-    description: Optional[str] = None
     status: Literal["pending", "processed", "failed"] = "pending"
+    content: Optional[str] = None
+    description: Optional[str] = None
 
 
 class QueryRequest(BaseModel):
