@@ -1,27 +1,19 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from langchain_core.vectorstores import InMemoryVectorStore
-from langchain.tools.retriever import create_retriever_tool
 from core.state import app_state
 from rag.graph import create_rag_graph
-from services.sources import process_source
+from rag.sources import process_source
+from rag.vectorstore import initialize_vectorstore
 
-# Use utility decorator to manage app resources before and after startup
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle events.
     
     Handles initialization on startup and cleanup on shutdown.
     """
-    # Initialize in-memory vector store
-    app_state.vectorstore = InMemoryVectorStore.from_documents(
-        documents=[], embedding=app_state.embeddings
-    )
-    app_state.retriever = app_state.vectorstore.as_retriever()
-    app_state.retriever_tool = create_retriever_tool(
-        app_state.retriever,
-        "retrieve_sources",
-        "Search and return information from the loaded sources.",
+    # Initialize vector store, retriever, and retriever tool
+    app_state.vectorstore, app_state.retriever, app_state.retriever_tool = initialize_vectorstore(
+        embeddings=app_state.embeddings
     )
     
     # Setup the RAG graph

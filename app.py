@@ -1,16 +1,13 @@
 import uuid
 from typing import List
-
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Path
 from fastapi.responses import JSONResponse
-
 from core.state import app_state
 from core.lifespan import lifespan
-from models.schemas import (QueryRequest, QueryResponse, SourceCreate,
-                            SourceState)
+from models.schemas import (QueryRequest, QueryResponse, SourceCreate, SourceState)
 from services.query import execute_query
-from services.sources import process_source#, process_source_play
+from rag.sources import process_source, process_source_play
 
 load_dotenv()
 
@@ -18,6 +15,21 @@ app = FastAPI(lifespan=lifespan)
 
 
 # API Endpoints
+@app.get("/sources", response_model=List[SourceState])
+async def list_sources():
+    """List all sources and their status"""
+    return list(app_state.sources.values())
+
+
+# @app.get("/sources/{source_id}", response_model=SourceState)
+# async def get_source(source_id: str = Path(..., description="The ID of the source to retrieve")):
+#     """Get metadata and content for a specific source"""
+#     if source_id not in app_state.sources:
+#         raise HTTPException(status_code=404, detail="Source not found")
+    
+#     return app_state.sources[source_id]
+
+
 @app.post("/sources", response_model=SourceState)
 def add_source(source: SourceCreate):
     """Add a new URL to the vector store"""
@@ -38,10 +50,24 @@ def add_source(source: SourceCreate):
     return result
 
 
-@app.get("/sources", response_model=List[SourceState])
-async def list_sources():
-    """List all sources and their status"""
-    return list(app_state.sources.values())
+@app.post("/sources_play", response_model=SourceState)
+async def add_source_play(source: SourceCreate):
+    """Add a new URL to the vector store"""
+    # result = process_source(source.url, source.description)
+    result = await process_source_play(source.url, source.description)
+    
+    if result.status == "failed":
+        return JSONResponse(
+            status_code=500,
+            content={
+                "id": result.id,
+                "url": result.url,
+                "status": "failed",
+                "error": "Failed to process source"
+            }
+        )
+    
+    return result
 
 
 @app.delete("/sources/{source_id}")

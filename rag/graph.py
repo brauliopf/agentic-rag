@@ -25,7 +25,7 @@ REWRITE_PROMPT = (
 GENERATE_PROMPT = (
     "You are an assistant for question-answering tasks. "
     "Use the following pieces of retrieved context to answer the question. "
-    "If you don't know the answer, just say that you don't know. "
+    "If the answer is not found directly in the retrieved context, say that the context provided is not relevant to answer the question. "
     "Use three sentences maximum and keep the answer concise.\n"
     "Question: {question} \n"
     "Context: {context}"
@@ -78,6 +78,8 @@ def generate_answer(state: MessagesState):
     context = state["messages"][-1].content
     prompt = GENERATE_PROMPT.format(question=question, context=context)
     response = app_state.llm.invoke([{"role": "user", "content": prompt}])
+
+    print('DEBUG:', prompt, '\n\n\n', response)
     return {"messages": [response]}
 
 

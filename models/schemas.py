@@ -1,5 +1,6 @@
 from pydantic import BaseModel, HttpUrl, Field
 from typing import List, Dict, Optional, Literal
+from datetime import datetime
 
 
 class SourceCreate(BaseModel):
@@ -12,7 +13,7 @@ class SourceState(BaseModel):
     url: str
     status: Literal["pending", "processed", "failed"] = "pending"
     content: Optional[str] = None
-    description: Optional[str] = None
+    scrapped_at: Optional[datetime] = None
 
 
 class QueryRequest(BaseModel):

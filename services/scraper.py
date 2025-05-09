@@ -35,7 +35,11 @@ class WebScraperAgent:
     async def scrape_content(self, url):
         if not self.page or self.page.is_closed():
             await self.init_browser()
-        await self.page.goto(url, wait_until="load")
+        
+        # await self.page.goto(url, wait_until="load")
+        # Convert URL to string to handle Pydantic HttpUrl objects
+        url_str = str(url)
+        await self.page.goto(url_str, wait_until="load")
         await self.page.wait_for_timeout(2000)  # Wait for dynamic content
         return await self.page.content()
 
@@ -69,7 +73,7 @@ class WebPageContentList(BaseModel):
 
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-async def process_with_llm(html, instructions, truncate = False):
+async def process_with_llm(html, instructions, general_prompt, truncate = False):
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-mini-2024-07-18",
         messages=[{
@@ -80,9 +84,7 @@ async def process_with_llm(html, instructions, truncate = False):
             following these instructions:
             {instructions}
             
-            Extract the title, description, presenter, 
-            the image URL and course URL for each of 
-            all the courses for the deeplearning.ai website
+            {general_prompt}
 
             Return ONLY valid JSON, no markdown or extra text."""
         }, {
@@ -98,16 +100,23 @@ async def process_with_llm(html, instructions, truncate = False):
 async def webscraper(target_url, instructions):
     result = None
     try:
+        # Ensure URL is a string
+        target_url_str = str(target_url)
+        
         # Scrape content and capture screenshot
         print("Extracting HTML Content \n")
-        html_content = await scraper.scrape_content(target_url)
+        html_content = await scraper.scrape_content(target_url_str)
 
         print("Taking Screenshot \n")
         screenshot = await scraper.screenshot_buffer()
         # Process content
 
         print("Processing..")
-        result: WebPageContentList = await process_with_llm(html_content, instructions, False)
+        general_prompt = """
+            Extract the title, description, presenter, the image URL and course URL for each of all the courses for the deeplearning.ai website.
+            Add a scrapped_at parameter with the datetime of the operation.
+        """
+        result: WebPageContentList = await process_with_llm(html_content, instructions, general_prompt, False)
         print("\nGenerated Structured Response")
     except Exception as e:
         print(f"❌ Error: {str(e)}")

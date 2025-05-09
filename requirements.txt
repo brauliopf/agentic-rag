@@ -1,10 +1,14 @@
+uvicorn
 langgraph
+langchain
 langchain_openai
 langchain_groq
+langchain_huggingface
 langchain-community
-langchain-text-splitters
+langchain_text_splitters
 beautifulsoup4
 playwright
-langchain_text_splitters
 tiktoken
 pydantic
+supabase
+fastapi
