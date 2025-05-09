@@ -7,7 +7,7 @@ from core.state import app_state
 from core.lifespan import lifespan
 from models.schemas import (QueryRequest, QueryResponse, SourceCreate, SourceState)
 from services.query import execute_query
-from rag.sources import process_source, process_source_play
+from rag.sources import ingest_webpage, process_source_play
 
 load_dotenv()
 
@@ -34,7 +34,7 @@ async def list_sources():
 def add_source(source: SourceCreate):
     """Add a new URL to the vector store"""
     # result = process_source(source.url, source.description)
-    result = process_source(source.url, source.description)
+    result = ingest_webpage(source.url, source.description)
     
     if result.status == "failed":
         return JSONResponse(

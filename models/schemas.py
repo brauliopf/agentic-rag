@@ -9,10 +9,9 @@ class SourceCreate(BaseModel):
 
 
 class SourceState(BaseModel):
-    id: str
     url: str
     status: Literal["pending", "processed", "failed"] = "pending"
-    content: Optional[str] = None
+    text: Optional[str] = None
     scrapped_at: Optional[datetime] = None
 
 
