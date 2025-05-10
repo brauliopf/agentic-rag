@@ -7,7 +7,7 @@ from core.state import app_state
 from core.lifespan import lifespan
 from models.schemas import (QueryRequest, QueryResponse, SourceCreate, SourceState)
 from services.query import execute_query
-from rag.sources import process_source, process_source_play
+from rag.sources import ingest_webpage
 
 load_dotenv()
 
@@ -21,20 +21,11 @@ async def list_sources():
     return list(app_state.sources.values())
 
 
-# @app.get("/sources/{source_id}", response_model=SourceState)
-# async def get_source(source_id: str = Path(..., description="The ID of the source to retrieve")):
-#     """Get metadata and content for a specific source"""
-#     if source_id not in app_state.sources:
-#         raise HTTPException(status_code=404, detail="Source not found")
-    
-#     return app_state.sources[source_id]
-
-
 @app.post("/sources", response_model=SourceState)
 def add_source(source: SourceCreate):
     """Add a new URL to the vector store"""
     # result = process_source(source.url, source.description)
-    result = process_source(source.url, source.description)
+    result = ingest_webpage(source.url, source.description)
     
     if result.status == "failed":
         return JSONResponse(

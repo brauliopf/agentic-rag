@@ -1,11 +1,15 @@
 uvicorn
 langgraph
 langchain
+python-dotenv
+langchain-core
 langchain_openai
 langchain_groq
 langchain_huggingface
 langchain-community
 langchain_text_splitters
+langchain-pinecone
+pinecone
 beautifulsoup4
 playwright
 tiktoken
