@@ -58,9 +58,6 @@ class WebScraperAgent:
         self.browser = None
         self.page = None
 
-scraper = WebScraperAgent()
-
-
 # Use LLM to digest the scrapped HTML content
 class WebPageContent(BaseModel):
     mainUrl: str
@@ -108,29 +105,29 @@ async def process_with_llm(html, instructions, general_prompt, truncate = False)
     return completion.choices[0].message.parsed
 
 
-async def selective_webscraper(target_url, instructions):
-    result = None
-    try:
-        # Ensure URL is a string
-        target_url_str = str(target_url)
+# async def selective_webscraper(target_url, instructions):
+#     result = None
+#     try:
+#         # Ensure URL is a string
+#         target_url_str = str(target_url)
         
-        # Scrape content and capture screenshot
-        print("Extracting HTML Content \n")
-        html_content = await scraper.scrape_content(target_url_str)
+#         # Scrape content and capture screenshot
+#         print("Extracting HTML Content \n")
+#         html_content = await scraper.scrape_content(target_url_str)
 
-        print("Taking Screenshot \n")
-        screenshot = await scraper.screenshot_buffer()
-        # Process content
+#         print("Taking Screenshot \n")
+#         screenshot = await scraper.screenshot_buffer()
+#         # Process content
 
-        print("Processing..")
-        general_prompt = """
-            Extract the title, description, presenter, the image URL and course URL for each of all the courses for the deeplearning.ai website.
-            Add a scrapped_at parameter with the datetime of the operation.
-        """
-        result: WebPageContentList = await process_with_llm(html_content, instructions, general_prompt, False)
-        print("\nGenerated Structured Response")
-    except Exception as e:
-        print(f"❌ Error: {str(e)}")
-    finally:
-        await scraper.close()
-    return result, screenshot
+#         print("Processing..")
+#         general_prompt = """
+#             Extract the title, description, presenter, the image URL and course URL for each of all the courses for the deeplearning.ai website.
+#             Add a scrapped_at parameter with the datetime of the operation.
+#         """
+#         result: WebPageContentList = await process_with_llm(html_content, instructions, general_prompt, False)
+#         print("\nGenerated Structured Response")
+#     except Exception as e:
+#         print(f"❌ Error: {str(e)}")
+#     finally:
+#         await scraper.close()
+#     return result, screenshot

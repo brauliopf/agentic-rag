@@ -3,6 +3,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.chat_models import init_chat_model
 from models.schemas import SourceState
+from rag.scraper import WebScraperAgent
 
 
 class AppState:
@@ -13,9 +14,8 @@ class AppState:
         self.retriever_tool = None # make available to AI agents
         self.graph = None
         self.vectorstore = None
-        # Initialize embeddings
         self.embeddings = OpenAIEmbeddings()
-        # Initialize language model
+        self.scraper = WebScraperAgent()
         self.llm = init_chat_model("openai:gpt-4.1", temperature=0)
 
 

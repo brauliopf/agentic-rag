@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from core.state import app_state
 from rag.graph import create_rag_graph
-from rag.sources import ingest_webpage
 from rag.vectorstore import get_vector_store
 from langchain.tools.retriever import create_retriever_tool
 
@@ -30,12 +29,13 @@ async def lifespan(app: FastAPI):
         # Add default sources
         default_sources = [
             ("https://lilianweng.github.io/posts/2024-11-28-reward-hacking/", "page 1"),
-            # ("https://lilianweng.github.io/posts/2024-07-07-hallucination/", "page 2"),
-            # ("https://lilianweng.github.io/posts/2024-04-12-diffusion-video/", "page 3")
+            ("https://lilianweng.github.io/posts/2024-07-07-hallucination/", "page 2"),
+            ("https://lilianweng.github.io/posts/2024-04-12-diffusion-video/", "page 3")
         ]
         
         for url, description in default_sources:
-            ingest_webpage(url)
+            # await ingest_webpage(url)
+            continue
             
         print('Added default sources')
     except Exception as e:

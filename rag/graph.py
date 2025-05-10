@@ -32,7 +32,7 @@ GENERATE_PROMPT = (
 )
 
 
-# Node functions
+# Nodes
 def generate_query_or_respond(state: MessagesState):
     """Call the model to generate a response based on the current state."""
     response = (
