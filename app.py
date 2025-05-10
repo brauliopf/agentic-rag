@@ -7,7 +7,7 @@ from core.state import app_state
 from core.lifespan import lifespan
 from models.schemas import (QueryRequest, QueryResponse, SourceCreate, SourceState)
 from services.query import execute_query
-from rag.sources import ingest_webpage, process_source_play
+from rag.sources import ingest_webpage
 
 load_dotenv()
 
@@ -19,15 +19,6 @@ app = FastAPI(lifespan=lifespan)
 async def list_sources():
     """List all sources and their status"""
     return list(app_state.sources.values())
-
-
-# @app.get("/sources/{source_id}", response_model=SourceState)
-# async def get_source(source_id: str = Path(..., description="The ID of the source to retrieve")):
-#     """Get metadata and content for a specific source"""
-#     if source_id not in app_state.sources:
-#         raise HTTPException(status_code=404, detail="Source not found")
-    
-#     return app_state.sources[source_id]
 
 
 @app.post("/sources", response_model=SourceState)
