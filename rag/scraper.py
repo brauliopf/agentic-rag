@@ -1,7 +1,8 @@
+import asyncio
 from playwright.async_api import async_playwright
 from pydantic import BaseModel
-import os
 from openai import OpenAI
+import os
 
 class WebScraperAgent:
     def __init__(self):
@@ -60,20 +61,30 @@ class WebScraperAgent:
 scraper = WebScraperAgent()
 
 
+# Use LLM to digest the scrapped HTML content
 class WebPageContent(BaseModel):
+    mainUrl: str
     title: str
     description: str
-    domain: str
-    imageUrl: str
-    mainUrl: str
-
+    content: str
 
 class WebPageContentList(BaseModel):
     pages: list[WebPageContent]
 
-
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 async def process_with_llm(html, instructions, general_prompt, truncate = False):
+    """
+    Process HTML content using an LLM to extract structured information.
+    
+    Args:
+        html (str): The HTML content to process
+        instructions (str): Specific instructions for the LLM on what to extract
+        general_prompt (str): General context and guidelines for extraction
+        truncate (bool, optional): Whether to truncate the HTML content. Defaults to False.
+        
+    Returns:
+        WebPageContentList: Structured data extracted from the HTML content
+    """
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-mini-2024-07-18",
         messages=[{
@@ -97,7 +108,7 @@ async def process_with_llm(html, instructions, general_prompt, truncate = False)
     return completion.choices[0].message.parsed
 
 
-async def webscraper(target_url, instructions):
+async def selective_webscraper(target_url, instructions):
     result = None
     try:
         # Ensure URL is a string

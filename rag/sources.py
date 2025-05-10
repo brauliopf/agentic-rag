@@ -1,11 +1,7 @@
-import uuid
 from typing import Optional
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_pinecone import PineconeVectorStore
-from models.schemas import SourceState
 from core.state import app_state
-from services.scraper import webscraper
 
 def ingest_webpage(url: str, description: Optional[str] = None):
     """
