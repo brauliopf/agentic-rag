@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from core.state import app_state
 from core.lifespan import lifespan
 from models.schemas import (QueryRequest, QueryResponse, SourceCreate, SourceState)
-from services.query import execute_query
+from core.query import execute_query
 from rag.sources import ingest_webpage
 
 load_dotenv()
@@ -18,48 +18,26 @@ app = FastAPI(lifespan=lifespan)
 @app.get("/sources", response_model=List[SourceState])
 async def list_sources():
     """List all sources and their status"""
-    return list(app_state.sources.values())
+    return app_state.sources
 
 
 @app.post("/sources", response_model=SourceState)
-def add_source(source: SourceCreate):
+async def add_source(source: SourceCreate):
     """Add a new URL to the vector store"""
-    # result = process_source(source.url, source.description)
-    result = ingest_webpage(source.url, source.description)
-    
+    result = await ingest_webpage(str(source.url), source.description)
+    # Optionally, store str(source.url) in app_state.sources if needed
+    app_state.sources.append(str(source.url))
     if result.status == "failed":
         return JSONResponse(
             status_code=500,
             content={
-                "id": result.id,
-                "url": result.url,
+                "id": getattr(result, "id", None),
+                "url": str(result.url),
                 "status": "failed",
                 "error": "Failed to process source"
             }
         )
-    
     return result
-
-
-@app.post("/sources_play", response_model=SourceState)
-async def add_source_play(source: SourceCreate):
-    """Add a new URL to the vector store"""
-    # result = process_source(source.url, source.description)
-    result = await process_source_play(source.url, source.description)
-    
-    if result.status == "failed":
-        return JSONResponse(
-            status_code=500,
-            content={
-                "id": result.id,
-                "url": result.url,
-                "status": "failed",
-                "error": "Failed to process source"
-            }
-        )
-    
-    return result
-
 
 @app.delete("/sources/{source_id}")
 async def delete_source(source_id: str = Path(..., description="The ID of the source to delete")):

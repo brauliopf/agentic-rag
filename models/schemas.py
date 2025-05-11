@@ -5,14 +5,14 @@ from datetime import datetime
 
 class SourceCreate(BaseModel):
     url: HttpUrl
-    description: Optional[str] = None
+    description: Optional[str]
 
 
 class SourceState(BaseModel):
-    url: str
+    url: HttpUrl
     status: Literal["pending", "processed", "failed"] = "pending"
     text: Optional[str] = None
-    scrapped_at: Optional[datetime] = None
+    scraped_at: Optional[datetime] = None
 
 
 class QueryRequest(BaseModel):
