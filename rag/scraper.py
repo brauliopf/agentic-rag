@@ -1,7 +1,8 @@
+import asyncio
 from playwright.async_api import async_playwright
 from pydantic import BaseModel
-import os
 from openai import OpenAI
+import os
 
 class WebScraperAgent:
     def __init__(self):
@@ -57,23 +58,30 @@ class WebScraperAgent:
         self.browser = None
         self.page = None
 
-scraper = WebScraperAgent()
-
-
+# Use LLM to digest the scrapped HTML content
 class WebPageContent(BaseModel):
+    mainUrl: str
     title: str
     description: str
-    domain: str
-    imageUrl: str
-    mainUrl: str
-
+    content: str
 
 class WebPageContentList(BaseModel):
     pages: list[WebPageContent]
 
-
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 async def process_with_llm(html, instructions, general_prompt, truncate = False):
+    """
+    Process HTML content using an LLM to extract structured information.
+    
+    Args:
+        html (str): The HTML content to process
+        instructions (str): Specific instructions for the LLM on what to extract
+        general_prompt (str): General context and guidelines for extraction
+        truncate (bool, optional): Whether to truncate the HTML content. Defaults to False.
+        
+    Returns:
+        WebPageContentList: Structured data extracted from the HTML content
+    """
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-mini-2024-07-18",
         messages=[{
@@ -97,29 +105,29 @@ async def process_with_llm(html, instructions, general_prompt, truncate = False)
     return completion.choices[0].message.parsed
 
 
-async def webscraper(target_url, instructions):
-    result = None
-    try:
-        # Ensure URL is a string
-        target_url_str = str(target_url)
+# async def selective_webscraper(target_url, instructions):
+#     result = None
+#     try:
+#         # Ensure URL is a string
+#         target_url_str = str(target_url)
         
-        # Scrape content and capture screenshot
-        print("Extracting HTML Content \n")
-        html_content = await scraper.scrape_content(target_url_str)
+#         # Scrape content and capture screenshot
+#         print("Extracting HTML Content \n")
+#         html_content = await scraper.scrape_content(target_url_str)
 
-        print("Taking Screenshot \n")
-        screenshot = await scraper.screenshot_buffer()
-        # Process content
+#         print("Taking Screenshot \n")
+#         screenshot = await scraper.screenshot_buffer()
+#         # Process content
 
-        print("Processing..")
-        general_prompt = """
-            Extract the title, description, presenter, the image URL and course URL for each of all the courses for the deeplearning.ai website.
-            Add a scrapped_at parameter with the datetime of the operation.
-        """
-        result: WebPageContentList = await process_with_llm(html_content, instructions, general_prompt, False)
-        print("\nGenerated Structured Response")
-    except Exception as e:
-        print(f"❌ Error: {str(e)}")
-    finally:
-        await scraper.close()
-    return result, screenshot
+#         print("Processing..")
+#         general_prompt = """
+#             Extract the title, description, presenter, the image URL and course URL for each of all the courses for the deeplearning.ai website.
+#             Add a scrapped_at parameter with the datetime of the operation.
+#         """
+#         result: WebPageContentList = await process_with_llm(html_content, instructions, general_prompt, False)
+#         print("\nGenerated Structured Response")
+#     except Exception as e:
+#         print(f"❌ Error: {str(e)}")
+#     finally:
+#         await scraper.close()
+#     return result, screenshot

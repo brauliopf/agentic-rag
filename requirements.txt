@@ -16,3 +16,4 @@ tiktoken
 pydantic
 supabase
 fastapi
+playwright
