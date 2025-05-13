@@ -23,16 +23,22 @@ def create_rag_graph(llm, _):
 
     def generate(state: GraphState):
         docs_content = "\n\n".join(doc.page_content for doc in state["context"])
-        messages = prompt.invoke({"question": state["question"], "context": docs_content})
+        custom_prompt = prompt.invoke({"question": state["question"], "context": docs_content})
 
-        response = llm.invoke(messages)
+        response = llm.invoke(custom_prompt)
         return {"answer": response.content}
 
 
-    # Compile application and test
+    # Compile application
     graph_builder = StateGraph(GraphState).add_sequence([retrieve, generate])
     graph_builder.add_edge(START, "retrieve")
-    return graph_builder.compile()
+    agent = graph_builder.compile()
+    # save graph visualization to file
+    graph_png = agent.get_graph().draw_mermaid_png()
+    with open("agent_graph.png", "wb") as f:
+        f.write(graph_png)
+        
+    return agent 
 
 
 # Agentic RAG WITH MEMORY AND MORE

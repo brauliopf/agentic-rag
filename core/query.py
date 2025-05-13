@@ -24,8 +24,6 @@ def execute_query(query_text):
     )
     
     # Run the query
-    print('DEBUG <execute_query>', initial_state)
-
     final_state = app_state.graph.invoke(initial_state)
     
     # Extract the answer and sources from the final state
@@ -33,7 +31,6 @@ def execute_query(query_text):
         agent_answer = final_state["answer"]
         
         # Extract content from the message
-        print('DEBUG <execute_query> agent_answer:', agent_answer)
         answer = agent_answer.content if hasattr(agent_answer, "content") else str(agent_answer)
         
         # Extract unique source URLs from context documents' metadata
