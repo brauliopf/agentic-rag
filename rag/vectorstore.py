@@ -27,20 +27,20 @@ def init_pinecone_index(index_name):
 
     return pc.Index(index_name)
 
-def get_embeddings_model():
+def get_embeddings_model(embedding_model):
     """Get the OpenAI embeddings model."""
     return OpenAIEmbeddings(
-        model=EMBEDDING_MODEL,
+        model=embedding_model,
         openai_api_key=OPENAI_API_KEY
     )
 
-def get_vector_store(index_name):
+def get_vector_store(index_name, embedding_model):
     """Initialize and return a Pinecone vector store with OpenAI embeddings."""
     # Initialize Pinecone
     init_pinecone_index(index_name)
     
     # Create embeddings model
-    embeddings = get_embeddings_model()
+    embeddings = get_embeddings_model(embedding_model)
     
     # Create vector store
     vectorstore = PineconeVectorStore(

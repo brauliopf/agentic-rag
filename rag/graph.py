@@ -3,7 +3,39 @@ from langgraph.graph import StateGraph, START, END, MessagesState
 from langgraph.prebuilt import ToolNode, tools_condition
 from core.state import app_state
 from models.schemas import GradeDocuments
+from langchain import hub
+from models.schemas import GraphState
 
+
+prompt = hub.pull("rlm/rag-prompt")
+# """ human
+# You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+# Question: {question} 
+# Context: {context} 
+# Answer:
+# """
+
+def create_rag_graph(llm, _):
+    def retrieve(state: GraphState):
+        retrieved_docs = app_state.vectorstore.similarity_search(state["question"])
+        print('DEBUG <graph.retrieve>', f'{len(retrieved_docs)} docs:', [f'{doc.page_content[:20]}...' for doc in retrieved_docs])
+        return {"context": retrieved_docs}
+
+    def generate(state: GraphState):
+        docs_content = "\n\n".join(doc.page_content for doc in state["context"])
+        messages = prompt.invoke({"question": state["question"], "context": docs_content})
+
+        response = llm.invoke(messages)
+        return {"answer": response.content}
+
+
+    # Compile application and test
+    graph_builder = StateGraph(GraphState).add_sequence([retrieve, generate])
+    graph_builder.add_edge(START, "retrieve")
+    return graph_builder.compile()
+
+
+# Agentic RAG WITH MEMORY AND MORE
 # Prompt templates
 GRADE_PROMPT = (
     "You are a grader assessing relevance of a retrieved document to a user question. \n "
@@ -30,7 +62,6 @@ GENERATE_PROMPT = (
     "Question: {question} \n"
     "Context: {context}"
 )
-
 
 # Nodes
 def generate_query_or_respond(state: MessagesState):
@@ -81,33 +112,6 @@ def generate_answer(state: MessagesState):
 
     print('DEBUG:', prompt, '\n\n\n', response)
     return {"messages": [response]}
-
-
-# Graph creation function
-from langchain import hub
-from models.schemas import GraphState
-
-prompt = hub.pull("rlm/rag-prompt")
-
-def create_rag_graph(llm, _):
-    def retrieve(state: GraphState):
-        print('DEBUG <create_rag_graph>', state)
-        retrieved_docs = app_state.vectorstore.similarity_search(state["question"])
-        print('DEBUG <create_rag_graph - list of docs>', retrieved_docs)
-        return {"context": retrieved_docs}
-
-
-    def generate(state: GraphState):
-        docs_content = "\n\n".join(doc.page_content for doc in state["context"])
-        messages = prompt.invoke({"question": state["question"], "context": docs_content})
-        response = llm.invoke(messages)
-        return {"answer": response.content}
-
-
-    # Compile application and test
-    graph_builder = StateGraph(GraphState).add_sequence([retrieve, generate])
-    graph_builder.add_edge(START, "retrieve")
-    return graph_builder.compile()
 
 def create_rag_graph_v2(llm, retriever_tool):
     """Create the RAG workflow graph."""

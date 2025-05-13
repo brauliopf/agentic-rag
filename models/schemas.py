@@ -4,10 +4,12 @@ from datetime import datetime
 from langchain_core.documents import Document
 from typing_extensions import List, TypedDict
 
+
 class GraphState(TypedDict):
     question: str
     context: List[Document] = None
     answer: str = None
+
 
 class SourceCreate(BaseModel):
     url: HttpUrl

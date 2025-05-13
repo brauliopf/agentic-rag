@@ -6,8 +6,6 @@ from langchain_core.documents import Document
 from typing_extensions import List
 import bs4
 
-import os
-
 class WebScraperAgent:
     """
     Inits a browser session. Can get content and take screenshots.
@@ -43,11 +41,16 @@ class WebScraperAgent:
 
     async def scrape_content(self, url, partial=True) -> List[Document]:
         """
-        Gets the HTML content from the page as a string with a lot of white space because it adds many '\n'.
+        Gets the HTML content from the page as a string. The final string has many white space because it adds many '\n'. The partial algorithm uses WebBaseLoader, while the integral algo uses Playwright to grab the entire HTML.
+        Params
+            URL (str): the target URL to scrape content from
+            partial (boolean = True): whether to get content from only a few specific HTML tags
+        
+        Returns:
+            List[Document]: List containing one or more Document objects with the page content
         """
 
         if partial:
-            print('scraping_with_partil_true')
             self.loader = WebBaseLoader(
                 web_paths=(str(url),),
                 bs_kwargs=dict(
@@ -64,19 +67,13 @@ class WebScraperAgent:
             if not self.page or self.page.is_closed():
                 await self.init_browser()
             
-            # await self.page.goto(url, wait_until="load")
             # Convert URL to string to handle Pydantic HttpUrl objects
             url_str = str(url)
             await self.page.goto(url_str, wait_until="load")
             await self.page.wait_for_timeout(2000)  # Wait for dynamic content
-            return await self.page.content()
-
-    async def take_screenshot(self, path="screenshot.png"):
-        await self.page.screenshot(path=path, full_page=True)
-        return path
-    async def screenshot_buffer(self):
-        screenshot_bytes = await self.page.screenshot(type="png", full_page=False)
-        return screenshot_bytes
+            content = await self.page.content()
+            # Convert the raw HTML string to a Document object
+            return [Document(page_content=content)]
 
     async def close(self):
         await self.browser.close()
@@ -84,47 +81,3 @@ class WebScraperAgent:
         self.playwright = None
         self.browser = None
         self.page = None
-
-# Scrape HTML content and 
-class WebPageContent(BaseModel):
-    mainUrl: str
-    title: str
-    description: str
-    content: str
-
-class WebPageContentList(BaseModel):
-    pages: list[WebPageContent]
-
-async def process_with_llm(html, instructions, truncate = False):
-    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-    """
-    Process HTML content using an LLM to extract structured information.
-    
-    Args:
-        html (str): The HTML content to process
-        instructions (str): Specific instructions for the LLM on what to extract
-        general_prompt (str): General context and guidelines for extraction
-        truncate (bool, optional): Whether to truncate the HTML content. Defaults to False.
-        
-    Returns:
-        WebPageContentList: Structured data extracted from the HTML content
-    """
-    completion = client.beta.chat.completions.parse(
-        model="gpt-4o-mini-2024-07-18",
-        messages=[{
-            "role": "system",
-            "content": f"""
-            You are an expert web scraping agent. Your task is to:
-            Extract relevant information from this HTML to JSON 
-            following these instructions:
-            {instructions}
-
-            Return ONLY valid JSON, no markdown or extra text."""
-        }, {
-            "role": "user",
-            "content": html[:150000]  # Truncate to stay under token limits
-        }],
-        temperature=0.1,
-        response_format=WebPageContentList,
-        )
-    return completion.choices[0].message.parsed

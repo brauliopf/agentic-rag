@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from models.schemas import QueryResponse
+from models.schemas import QueryResponse, GraphState
 from core.state import app_state
 
 
@@ -19,8 +19,7 @@ def execute_query(query_text):
     #     raise HTTPException(status_code=400, detail="No sources have been added yet")
     
     # Run the query through the graph
-    from models.schemas import GraphState
-    initial_state = GraphState (
+    initial_state = GraphState(
         question=query_text
     )
     
@@ -29,22 +28,27 @@ def execute_query(query_text):
 
     final_state = app_state.graph.invoke(initial_state)
     
-    # Extract the answer from the final state
-    # print(final_state)
+    # Extract the answer and sources from the final state
     if final_state and "answer" in final_state:
-        # The last message in the messages array contains our answer
-        last_message = final_state["answer"]
+        agent_answer = final_state["answer"]
         
         # Extract content from the message
-        answer = last_message.content if hasattr(last_message, "content") else str(last_message)
+        print('DEBUG <execute_query> agent_answer:', agent_answer)
+        answer = agent_answer.content if hasattr(agent_answer, "content") else str(agent_answer)
         
-        # Extract sources (this is simplified - in practice, you would track which documents were used)
-        # source_urls = [s.url for s in app_state.sources.values() if s.status == "processed"]
+        # Extract unique source URLs from context documents' metadata
+        sources = []
+        if final_state.get("context"):
+            for doc in final_state["context"]:
+                if doc.metadata and "source" in doc.metadata:
+                    source = doc.metadata["source"]
+                    if source not in sources:
+                        sources.append(source)
         
         return QueryResponse(
             query=query_text,
             answer=answer,
-            sources=['s1','s2']
+            sources=sources if sources else ['No sources found']
         )
     else:
         raise HTTPException(status_code=500, detail="Failed to generate response") 

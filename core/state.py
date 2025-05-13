@@ -1,8 +1,3 @@
-from typing import List, Dict
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from models.schemas import SourceState
-
-
 class AppState:
     """Manages the application state and resources."""
     
