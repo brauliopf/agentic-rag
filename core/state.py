@@ -1,23 +1,20 @@
-from typing import Dict
-from langchain_openai import OpenAIEmbeddings
+from typing import List, Dict
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.chat_models import init_chat_model
 from models.schemas import SourceState
-from rag.scraper import WebScraperAgent
 
 
 class AppState:
     """Manages the application state and resources."""
     
     def __init__(self):
-        self.sources = []
+        self.sources: str = []
         self.retriever = None # doc retrieval logic (engage with vector store)
         self.retriever_tool = None # make available to AI agents
         self.graph = None
         self.vectorstore = None
-        self.embeddings = OpenAIEmbeddings()
-        self.scraper = WebScraperAgent()
-        self.llm = init_chat_model("openai:gpt-4.1", temperature=0)
+        self.embeddings = None
+        self.scraper = None
+        self.llm = None
 
 
 # Initialize a global instance of the application state

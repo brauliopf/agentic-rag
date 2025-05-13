@@ -7,7 +7,7 @@ from core.state import app_state
 from core.lifespan import lifespan
 from models.schemas import (QueryRequest, QueryResponse, SourceCreate, SourceState)
 from core.query import execute_query
-from rag.sources import ingest_webpage
+from rag.loader import ingest_webpage
 
 load_dotenv()
 
@@ -15,9 +15,10 @@ app = FastAPI(lifespan=lifespan)
 
 
 # API Endpoints
-@app.get("/sources", response_model=List[SourceState])
+@app.get("/sources", response_model=List[str])
 async def list_sources():
     """List all sources and their status"""
+    print("DEBUG", "get", app_state.sources)
     return app_state.sources
 
 
@@ -25,8 +26,7 @@ async def list_sources():
 async def add_source(source: SourceCreate):
     """Add a new URL to the vector store"""
     result = await ingest_webpage(str(source.url), source.description)
-    # Optionally, store str(source.url) in app_state.sources if needed
-    app_state.sources.append(str(source.url))
+    
     if result.status == "failed":
         return JSONResponse(
             status_code=500,
@@ -37,6 +37,8 @@ async def add_source(source: SourceCreate):
                 "error": "Failed to process source"
             }
         )
+    
+    app_state.sources.append(str(result.url))
     return result
 
 @app.delete("/sources/{source_id}")

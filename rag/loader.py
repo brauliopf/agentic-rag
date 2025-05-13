@@ -8,20 +8,21 @@ from models.schemas import SourceState
 
 async def ingest_webpage(url: str, description: Optional[str] = None) -> SourceState:
     """
-    Process a source URL, extract content, and add it to the vector store.
+    Process a source URL: extract content, and add it to the vector store.
+    (Does not do any post-processing of the HTML)
     
     Args:
         url: The URL to process
         description: Optional description of the source
         
     Returns:
-        A SourceState object representing the processed source
+        A SourceState object with the status of the ingestion process.
     """
     
     try:
         # Load docs from the URL
         docs = await app_state.scraper.scrape_content(str(url))
-        
+
         # Playwright scraper returns a raw string with the HTML content
         # Convert to Document objects if needed
         if docs and isinstance(docs, str):
@@ -31,10 +32,9 @@ async def ingest_webpage(url: str, description: Optional[str] = None) -> SourceS
         
         # Split docs into chunks for better retrieval
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-            chunk_size=200, chunk_overlap=50
+            chunk_size=1000, chunk_overlap=200
         )
         doc_splits = text_splitter.split_documents(docs)
-        print(len(doc_splits), doc_splits[0], doc_splits[1])
 
         # Add metadata to each doc_split
         ids = []
@@ -45,7 +45,7 @@ async def ingest_webpage(url: str, description: Optional[str] = None) -> SourceS
             ids.append(f'{url}-SPLIT:{idx}')
         
         # Batch documents in smaller groups
-        batch_size = 20  # Adjust based on your document sizes
+        batch_size = 5  # Adjust based on your document sizes
         target_namespace = f'dev'
         for i in range(0, len(doc_splits), batch_size):
             batch_docs = doc_splits[i:i+batch_size]

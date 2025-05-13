@@ -19,19 +19,21 @@ def execute_query(query_text):
     #     raise HTTPException(status_code=400, detail="No sources have been added yet")
     
     # Run the query through the graph
-    initial_state = {
-        "messages": [
-            {"role": "user", "content": query_text}
-        ]
-    }
+    from models.schemas import GraphState
+    initial_state = GraphState (
+        question=query_text
+    )
     
     # Run the query
+    print('DEBUG <execute_query>', initial_state)
+
     final_state = app_state.graph.invoke(initial_state)
     
     # Extract the answer from the final state
-    if final_state and "messages" in final_state:
+    # print(final_state)
+    if final_state and "answer" in final_state:
         # The last message in the messages array contains our answer
-        last_message = final_state["messages"][-1]
+        last_message = final_state["answer"]
         
         # Extract content from the message
         answer = last_message.content if hasattr(last_message, "content") else str(last_message)

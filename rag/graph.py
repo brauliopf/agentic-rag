@@ -84,7 +84,32 @@ def generate_answer(state: MessagesState):
 
 
 # Graph creation function
-def create_rag_graph(llm, retriever_tool):
+from langchain import hub
+from models.schemas import GraphState
+
+prompt = hub.pull("rlm/rag-prompt")
+
+def create_rag_graph(llm, _):
+    def retrieve(state: GraphState):
+        print('DEBUG <create_rag_graph>', state)
+        retrieved_docs = app_state.vectorstore.similarity_search(state["question"])
+        print('DEBUG <create_rag_graph - list of docs>', retrieved_docs)
+        return {"context": retrieved_docs}
+
+
+    def generate(state: GraphState):
+        docs_content = "\n\n".join(doc.page_content for doc in state["context"])
+        messages = prompt.invoke({"question": state["question"], "context": docs_content})
+        response = llm.invoke(messages)
+        return {"answer": response.content}
+
+
+    # Compile application and test
+    graph_builder = StateGraph(GraphState).add_sequence([retrieve, generate])
+    graph_builder.add_edge(START, "retrieve")
+    return graph_builder.compile()
+
+def create_rag_graph_v2(llm, retriever_tool):
     """Create the RAG workflow graph."""
     workflow = StateGraph(MessagesState)
     
